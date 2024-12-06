@@ -14,7 +14,7 @@
     "Programming Languages"
   ],
   "activationEvents": [
-    "onLanguage:lua"
+    "onLanguage:nixLua"
   ],
   "main": "./out/extension.js",
   "scripts": {
@@ -26,10 +26,15 @@
   "contributes": {
     "languages": [
       {
-        "id": "lua",
+        "id": "nixLua",
+        "aliases": [
+          "Nixware Lua",
+          "nixlua"
+        ],
         "extensions": [
           ".lua"
-        ]
+        ],
+        "configuration": "./language-configuration.json"
       }
     ]
   },
