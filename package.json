@@ -1,0 +1,49 @@
+{
+  "name": "nixware-cs2-lua",
+  "displayName": "Nixware CS2 Lua API",
+  "description": "Поддержка Nixware CS2 Lua API",
+  "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chadlrnsn/nixware-lua-intellisense"
+  },
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:lua"
+  ],
+  "main": "./out/extension.js",
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts"
+  },
+  "contributes": {
+    "languages": [
+      {
+        "id": "lua",
+        "extensions": [
+          ".lua"
+        ]
+      }
+    ]
+  },
+  "dependencies": {
+    "axios": "^1.6.2"
+  },
+  "devDependencies": {
+    "@types/axios": "^0.14.4",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^16.x",
+    "@types/vscode": "^1.60.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.1",
+    "@typescript-eslint/parser": "^6.13.1",
+    "eslint": "^8.54.0",
+    "typescript": "^5.3.2"
+  }
+}
