@@ -1,6 +1,7 @@
 import { NixwareApi, NixwareClass, NixwareMethod, NixwareParameter } from '../types/api-types';
 import axios from "axios";
 import { outputChannel } from '../extension';
+import * as vscode from 'vscode';
 
 export class NixwareDocumentationParser {
     private readonly baseUrl = 'https://api.github.com/repos/Nixer1337/nixware-cs2-docs/contents/docs';
@@ -15,10 +16,18 @@ export class NixwareDocumentationParser {
             await this.parseDirectory(this.baseUrl, api);
             return api;
         } catch (error) {
-            if (error instanceof Error) {
-                throw new Error(`Ошибка парсинга документации: ${error.message}`);
+            const message = error instanceof Error ? error.message : 'Неизвестная ошибка';
+            const result = await vscode.window.showErrorMessage(
+                `Ошибка парсинга документации: ${message}`,
+                'Повторить',
+                'Отмена'
+            );
+
+            if (result === 'Повторить') {
+                return this.parseDocumentation();
             }
-            throw new Error('Неизвестная ошибка при парсинге документации');
+
+            throw error;
         }
     }
 
@@ -27,27 +36,48 @@ export class NixwareDocumentationParser {
             const response = await axios.get(url);
             const items = response.data;
 
-            for (const item of items) {
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
                 if (item.type === 'dir') {
-                    // Рекурсивно обходим поддиректории
                     await this.parseDirectory(item.url, api);
                 } else if (item.type === 'file' && item.name.endsWith('.md')) {
-                    // Парсим .md файлы
-                    const content = await this.fetchContent(item.download_url);
-                    outputChannel.appendLine(`Парсинг файла: ${item.path}`);
+                    try {
+                        const content = await this.fetchContent(item.download_url);
+                        outputChannel.appendLine(`Парсинг файла: ${item.path}`);
 
-                    if (item.name === 'globals.md') {
-                        this.parseGlobals(content, api);
-                    } else {
-                        this.parseClasses(content, api);
+                        if (item.name === 'globals.md') {
+                            this.parseGlobals(content, api);
+                        } else {
+                            this.parseClasses(content, api);
+                        }
+                    } catch (error) {
+                        const message = error instanceof Error ? error.message : 'Неизвестная ошибка';
+                        const result = await vscode.window.showErrorMessage(
+                            `Ошибка загрузки файла ${item.path}: ${message}`,
+                            'Повторить',
+                            'Пропустить'
+                        );
+
+                        if (result === 'Повторить') {
+                            i--;
+                            continue;
+                        }
                     }
                 }
             }
         } catch (error) {
-            if (error instanceof Error) {
-                throw new Error(`Ошибка обхода директории ${url}: ${error.message}`);
+            const message = error instanceof Error ? error.message : 'Неизвестная ошибка';
+            const result = await vscode.window.showErrorMessage(
+                `Ошибка обхода директории: ${message}`,
+                'Повторить',
+                'Отмена'
+            );
+
+            if (result === 'Повторить') {
+                await this.parseDirectory(url, api);
+            } else {
+                throw error;
             }
-            throw new Error(`Неизвестная ошибка при обходе директории ${url}`);
         }
     }
 
@@ -74,7 +104,6 @@ export class NixwareDocumentationParser {
             const line = lines[i].trim();
 
             if (line.startsWith('# ')) {
-                // Новый класс
                 if (currentClass) {
                     api.classes[currentClass.name] = currentClass;
                 }
@@ -89,7 +118,6 @@ export class NixwareDocumentationParser {
                 currentSection = 'description';
             }
             else if (line.startsWith('## ')) {
-                // Новый метод
                 if (currentMethod && currentClass) {
                     currentClass.methods.push(currentMethod);
                 }
@@ -129,7 +157,6 @@ export class NixwareDocumentationParser {
             }
         }
 
-        // Добавляем последний класс
         if (currentClass) {
             if (currentMethod) {
                 currentClass.methods.push(currentMethod);
@@ -188,7 +215,6 @@ export class NixwareDocumentationParser {
             }
         }
 
-        // Добавляем последнюю функцию
         if (currentFunction) {
             currentFunction.description = description.trim();
             api.globals[currentFunction.name] = currentFunction;
