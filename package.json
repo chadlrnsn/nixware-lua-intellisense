@@ -36,6 +36,12 @@
         ],
         "configuration": "./language-configuration.json"
       }
+    ],
+    "commands": [
+      {
+        "command": "nixware-lua.reload",
+        "title": "Nixware Lua: Перезагрузить расширение"
+      }
     ]
   },
   "dependencies": {

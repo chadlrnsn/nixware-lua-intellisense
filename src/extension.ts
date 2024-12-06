@@ -4,6 +4,7 @@ import * as vscode from 'vscode';
 import { NixwareDocumentationParser } from './parser/documentation-parser';
 
 export let outputChannel: vscode.OutputChannel;
+export let apiDocs: any = null;
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -12,10 +13,35 @@ export function activate(context: vscode.ExtensionContext) {
 	outputChannel = vscode.window.createOutputChannel('Nixware Lua');
 	context.subscriptions.push(outputChannel);
 
+	// Регистрируем команду перезагрузки
+	let reloadCommand = vscode.commands.registerCommand('nixware-lua.reload', async () => {
+		outputChannel.appendLine('Перезагрузка расширения...');
+
+		// Очищаем текущее состояние
+		if (provider) {
+			provider.dispose();
+		}
+
+		// Заново инициализируем парсер и загружаем документацию
+		const parser = new NixwareDocumentationParser();
+		apiDocs = null;
+
+		try {
+			apiDocs = await parser.parseDocumentation();
+			outputChannel.appendLine('Расширение успешно перезагружено');
+			vscode.window.showInformationMessage('Nixware Lua: Расширение перезагружено');
+		} catch (error) {
+			outputChannel.appendLine('Ошибка при перезагрузке расширения');
+			vscode.window.showErrorMessage('Nixware Lua: Ошибка при перезагрузке');
+		}
+	});
+
+	context.subscriptions.push(reloadCommand);
+
 	outputChannel.appendLine('Nixware CS2 Lua Extension активировано');
 
 	const parser = new NixwareDocumentationParser();
-	let apiDocs: any = null;
+	let provider: vscode.Disposable;
 
 	// Загружаем документацию при активации
 	parser.parseDocumentation().then(docs => {
@@ -29,7 +55,7 @@ export function activate(context: vscode.ExtensionContext) {
 		outputChannel.show(true);
 	});
 
-	const provider = vscode.languages.registerCompletionItemProvider('nixLua', {
+	provider = vscode.languages.registerCompletionItemProvider('nixLua', {
 		provideCompletionItems(document: vscode.TextDocument, position: vscode.Position) {
 			if (!apiDocs) {
 				outputChannel.appendLine('API документация еще не загружена');
